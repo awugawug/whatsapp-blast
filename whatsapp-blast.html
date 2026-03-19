@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Blast Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+
+    .header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 1rem 2rem; display: flex; align-items: center; gap: 12px; }
+    .header-icon { width: 36px; height: 36px; background: #25D366; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .header-icon svg { width: 20px; height: 20px; fill: white; }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header span { font-size: 13px; color: #888; margin-left: 4px; }
+
+    .container { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e5e5; }
+    .tab { padding: 9px 18px; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #888; border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+    .tab.active { color: #1a1a1a; border-bottom: 2px solid #1a1a1a; }
+    .tab:hover:not(.active) { color: #1a1a1a; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .card { background: #fff; border-radius: 12px; border: 1px solid #e5e5e5; padding: 1.5rem; margin-bottom: 1rem; }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 12px; flex-wrap: wrap; }
+    .btn-primary { background: #1a1a1a; color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+    .btn-primary:hover { background: #333; }
+    .btn-secondary { background: transparent; border: 1px solid #e5e5e5; color: #1a1a1a; padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-secondary:hover { background: #f5f5f3; }
+    .btn-danger { background: transparent; border: 1px solid #fca5a5; color: #dc2626; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+    .btn-danger:hover { background: #fef2f2; }
+    .btn-green { background: #25D366; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600; }
+    .btn-green:hover { background: #1db954; }
+
+    input[type="text"], input[type="date"], input[type="time"], input[type="password"], textarea, select {
+      width: 100%; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 8px;
+      font-size: 14px; background: #fff; color: #1a1a1a; font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #999; }
+    textarea { resize: vertical; min-height: 120px; }
+
+    .contact-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .contact-table th { text-align: left; font-size: 12px; color: #888; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    .contact-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #1a1a1a; }
+    .contact-table tr:last-child td { border-bottom: none; }
+    .contact-table tr:hover td { background: #f9f9f9; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+    .av-blue { background: #dbeafe; color: #1d4ed8; }
+    .av-green { background: #dcfce7; color: #16a34a; }
+    .av-amber { background: #fef9c3; color: #b45309; }
+    .name-cell { display: flex; align-items: center; gap: 10px; }
+    .badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-gray { background: #f0f0f0; color: #666; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .checkbox { width: 15px; height: 15px; cursor: pointer; accent-color: #1a1a1a; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .stat-card { background: #f5f5f3; border-radius: 10px; padding: 1rem 1.25rem; }
+    .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .stat-val { font-size: 24px; font-weight: 600; color: #1a1a1a; }
+
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { font-size: 13px; color: #555; margin-bottom: 6px; display: block; font-weight: 500; }
+    .char-count { font-size: 12px; color: #aaa; text-align: right; margin-top: 4px; }
+    .hint { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    .recipient-picker { border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
+    .recipient-header { padding: 10px 14px; background: #f9f9f9; font-size: 13px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; }
+    .recipient-list { max-height: 200px; overflow-y: auto; }
+    .recipient-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 13px; border-bottom: 1px solid #f9f9f9; cursor: pointer; }
+    .recipient-item:last-child { border-bottom: none; }
+    .recipient-item:hover { background: #f9f9f9; }
+
+    .schedule-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .blast-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #f0f0f0; flex-wrap: wrap; gap: 12px; }
+    .selected-count { font-size: 13px; color: #888; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 14px; padding: 1.75rem; width: 380px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; }
+
+    .history-item { border: 1px solid #e5e5e5; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 12px; }
+    .history-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .history-msg { font-size: 14px; color: #333; margin-bottom: 8px; white-space: pre-wrap; line-height: 1.5; }
+    .history-recipients { font-size: 12px; color: #aaa; }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 14px; }
+
+    .toast { position: fixed; bottom: 2rem; right: 2rem; background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+
+    .fonnte-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .fonnte-label { font-size: 13px; font-weight: 500; color: #166534; flex-shrink: 0; }
+    .fonnte-status { font-size: 12px; padding: 3px 10px; border-radius: 99px; }
+    .fonnte-status.connected { background: #dcfce7; color: #16a34a; }
+    .fonnte-status.disconnected { background: #f0f0f0; color: #888; }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .schedule-row { grid-template-columns: 1fr; }
+      .container { padding: 0 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">
+    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.553 4.122 1.523 5.857L.057 23.885a.75.75 0 00.917.944l6.197-1.44A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.693-.505-5.235-1.385l-.372-.217-3.857.896.935-3.765-.237-.386A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+  </div>
+  <div>
+    <h1>WhatsApp Blast Manager <span>via Fonnte</span></h1>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('contacts')">Contacts</button>
+    <button class="tab" onclick="switchTab('blast')">Blast Message</button>
+    <button class="tab" onclick="switchTab('history')">History</button>
+    <button class="tab" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <!-- CONTACTS -->
+  <div id="tab-contacts" class="section active">
+    <div class="card">
+      <div class="top-bar">
+        <input type="text" placeholder="Search contacts..." id="search-input" oninput="filterContacts()" style="max-width:260px">
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+          <button class="btn-primary" onclick="openAddModal()">+ Add Contact</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="contact-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="checkbox" id="check-all" onchange="toggleAll(this)"></th>
+              <th>Name</th>
+              <th>WhatsApp Number</th>
+              <th>Group</th>
+              <th>Status</th>
+              <th style="text-align:right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="contacts-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;font-size:13px;color:#888" id="contact-count"></div>
+    </div>
+  </div>
+
+  <!-- BLAST -->
+  <div id="tab-blast" class="section">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total contacts</div><div class="stat-val" id="stat-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">Selected</div><div class="stat-val" id="stat-selected">0</div></div>
+      <div class="stat-card"><div class="stat-label">Sent today</div><div class="stat-val" id="stat-sent">0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="fonnte-section" id="fonnte-banner">
+        <span class="fonnte-label">Fonnte API</span>
+        <span class="fonnte-status disconnected" id="fonnte-status-badge">Not configured</span>
+        <span style="font-size:13px;color:#166534;flex:1">Go to Settings to add your Fonnte API token to enable real sending.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea id="blast-msg" placeholder="Hi {name}, ada promo spesial untuk kamu hari ini! ..." oninput="updateCharCount()"></textarea>
+        <div class="char-count"><span id="char-count">0</span> chars &nbsp;·&nbsp; Use {name} to personalize</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Recipients</label>
+        <div class="recipient-picker">
+          <div class="recipient-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" class="checkbox" id="check-all-recip" onchange="toggleAllRecip(this)">
+              Select all
+            </div>
+            <span id="recip-count" style="font-size:12px;color:#888">0 selected</span>
+          </div>
+          <div class="recipient-list" id="recipient-list"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Schedule (optional — leave blank to send now)</label>
+        <div class="schedule-row">
+          <div>
+            <label class="form-label" style="font-size:12px">Date</label>
+            <input type="date" id="sched-date">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:12px">Time</label>
+            <input type="time" id="sched-time">
+          </div>
+        </div>
+      </div>
+
+      <div class="blast-footer">
+        <span class="selected-count" id="blast-footer-count">No recipients selected</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" onclick="previewBlast()">Preview</button>
+          <button class="btn-green" onclick="sendBlast()">&#128293; Send Blast</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" class="section">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <span style="font-size:15px;font-weight:600">Sent messages</span>
+        <button class="btn-secondary" onclick="clearHistory()">Clear history</button>
+      </div>
+      <div id="history-list"><div class="empty-state">No messages sent yet.</div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-settings" class="section">
+    <div class="card">
+      <div style="font-size:16px;font-weight:600;margin-bottom:1.25rem">Fonnte API Settings</div>
+      <div class="form-group">
+        <label class="form-label">Fonnte API Token</label>
+        <input type="password" id="fonnte-token" placeholder="Paste your Fonnte token here...">
+        <div class="hint">Get your token at <a href="https://fonnte.com" target="_blank" style="color:#16a34a">fonnte.com</a> → Dashboard → Device → Token</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Delay between messages (seconds)</label>
+        <input type="text" id="msg-delay" value="3" style="max-width:100px">
+        <div class="hint">Recommended: 3–5 seconds to avoid getting blocked</div>
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div style="font-size:16px;font-weight:600;margin-bottom:1.25rem">Import Contacts</div>
+      <div class="form-group">
+        <label class="form-label">Upload CSV file</label>
+        <input type="file" id="csv-file" accept=".csv" onchange="importCSV(event)" style="padding:6px">
+        <div class="hint">CSV format: name, phone, group (header row required)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add contact</div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input type="text" id="new-name" placeholder="e.g. Budi Santoso">
+    </div>
+    <div class="form-group">
+      <label class="form-label">WhatsApp number</label>
+      <input type="text" id="new-phone" placeholder="e.g. 628123456789">
+      <div class="hint">Format: 62 + phone number (no +, no spaces)</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Group (optional)</label>
+      <input type="text" id="new-group" placeholder="e.g. VIP, Reseller, Member">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select id="new-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-save-btn" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="preview-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-title">Message preview</div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px" id="preview-label">Preview for first recipient:</div>
+    <div id="preview-msg" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;font-size:14px;line-height:1.6;white-space:pre-wrap;color:#14532d"></div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="closePreview()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let contacts = [
+  { id:1, name:'Budi Santoso', phone:'628111222333', group:'VIP', active:true },
+  { id:2, name:'Siti Rahayu', phone:'628222333444', group:'Reseller', active:true },
+  { id:3, name:'Agus Prasetyo', phone:'628333444555', group:'VIP', active:false },
+  { id:4, name:'Dewi Kurniawati', phone:'628444555666', group:'Member', active:true },
+  { id:5, name:'Rizky Firmansyah', phone:'628555666777', group:'Reseller', active:true },
+];
+let editId = null;
+let history = [];
+let sentToday = 0;
+let settings = { token: '', delay: 3 };
+
+function loadStorage(){
+  try {
+    const c = localStorage.getItem('wab_contacts');
+    const h = localStorage.getItem('wab_history');
+    const s = localStorage.getItem('wab_settings');
+    const st = localStorage.getItem('wab_sent_today');
+    if(c) contacts = JSON.parse(c);
+    if(h) history = JSON.parse(h);
+    if(s) settings = JSON.parse(s);
+    if(st) sentToday = parseInt(st)||0;
+  } catch(e){}
+}
+
+function saveStorage(){
+  try {
+    localStorage.setItem('wab_contacts', JSON.stringify(contacts));
+    localStorage.setItem('wab_history', JSON.stringify(history));
+    localStorage.setItem('wab_settings', JSON.stringify(settings));
+    localStorage.setItem('wab_sent_today', sentToday);
+  } catch(e){}
+}
+
+function initials(name){ return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function avatarClass(name){ return ['av-blue','av-green','av-amber'][name.charCodeAt(0)%3]; }
+
+function renderContacts(list){
+  const tbody = document.getElementById('contacts-tbody');
+  const countEl = document.getElementById('contact-count');
+  if(!list||list.length===0){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state">No contacts found</div></td></tr>`;
+    countEl.textContent='';
+    return;
+  }
+  tbody.innerHTML = list.map(c=>`
+    <tr>
+      <td><input type="checkbox" class="checkbox row-check" data-id="${c.id}"></td>
+      <td><div class="name-cell"><div class="avatar ${avatarClass(c.name)}">${initials(c.name)}</div>${c.name}</div></td>
+      <td style="color:#888;font-size:13px">${c.phone}</td>
+      <td><span class="badge badge-gray">${c.group||'—'}</span></td>
+      <td><span class="badge ${c.active?'badge-green':'badge-gray'}">${c.active?'Active':'Inactive'}</span></td>
+      <td style="text-align:right">
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn-secondary" style="padding:5px 10px;font-size:12px" onclick="editContact(${c.id})">Edit</button>
+          <button class="btn-danger" onclick="deleteContact(${c.id})">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  countEl.textContent = list.length + ' contact' + (list.length!==1?'s':'');
+  updateStats();
+  renderRecipients();
+}
+
+function filterContacts(){
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderContacts(contacts.filter(c=>
+    c.name.toLowerCase().includes(q)||c.phone.includes(q)||(c.group||'').toLowerCase().includes(q)
+  ));
+}
+
+function toggleAll(cb){ document.querySelectorAll('.row-check').forEach(c=>c.checked=cb.checked); }
+
+function openAddModal(){
+  editId=null;
+  document.getElementById('modal-title').textContent='Add contact';
+  document.getElementById('modal-save-btn').textContent='Save';
+  ['new-name','new-phone','new-group'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-status').value='active';
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('new-name').focus(),100);
+}
+function closeModal(){ document.getElementById('add-modal').classList.remove('open'); }
+function closePreview(){ document.getElementById('preview-modal').classList.remove('open'); }
+
+function saveContact(){
+  const name=document.getElementById('new-name').value.trim();
+  const phone=document.getElementById('new-phone').value.trim().replace(/\s+/g,'');
+  const group=document.getElementById('new-group').value.trim();
+  const active=document.getElementById('new-status').value==='active';
+  if(!name||!phone){ showToast('Name and phone number are required'); return; }
+  if(editId){
+    const c=contacts.find(x=>x.id===editId);
+    Object.assign(c,{name,phone,group,active});
+  } else {
+    contacts.push({id:Date.now(),name,phone,group,active});
+  }
+  saveStorage();
+  closeModal();
+  filterContacts();
+  showToast(editId?'Contact updated':'Contact added');
+}
+
+function editContact(id){
+  const c=contacts.find(x=>x.id===id);
+  editId=id;
+  document.getElementById('modal-title').textContent='Edit contact';
+  document.getElementById('modal-save-btn').textContent='Update';
+  document.getElementById('new-name').value=c.name;
+  document.getElementById('new-phone').value=c.phone;
+  document.getElementById('new-group').value=c.group||'';
+  document.getElementById('new-status').value=c.active?'active':'inactive';
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function deleteContact(id){
+  if(!confirm('Delete this contact?')) return;
+  contacts=contacts.filter(x=>x.id!==id);
+  saveStorage();
+  filterContacts();
+  showToast('Contact deleted');
+}
+
+function updateStats(){
+  document.getElementById('stat-total').textContent=contacts.length;
+  document.getElementById('stat-sent').textContent=sentToday;
+}
+
+function renderRecipients(){
+  const list=document.getElementById('recipient-list');
+  const active=contacts.filter(c=>c.active);
+  if(active.length===0){ list.innerHTML=`<div style="padding:1rem;text-align:center;font-size:13px;color:#aaa">No active contacts</div>`; return; }
+  list.innerHTML=active.map(c=>`
+    <div class="recipient-item" onclick="toggleRecip(${c.id})">
+      <input type="checkbox" class="checkbox recip-check" data-id="${c.id}" onclick="event.stopPropagation();updateRecipCount()">
+      <div class="avatar ${avatarClass(c.name)}" style="width:28px;height:28px;font-size:10px">${initials(c.name)}</div>
+      <span style="flex:1">${c.name}</span>
+      <span style="font-size:12px;color:#aaa">${c.group||''}</span>
+    </div>
+  `).join('');
+  updateRecipCount();
+}
+
+function toggleRecip(id){
+  const cb=document.querySelector(`.recip-check[data-id="${id}"]`);
+  if(cb){ cb.checked=!cb.checked; updateRecipCount(); }
+}
+
+function toggleAllRecip(cb){ document.querySelectorAll('.recip-check').forEach(c=>c.checked=cb.checked); updateRecipCount(); }
+
+function updateRecipCount(){
+  const n=document.querySelectorAll('.recip-check:checked').length;
+  document.getElementById('recip-count').textContent=n+' selected';
+  document.getElementById('stat-selected').textContent=n;
+  document.getElementById('blast-footer-count').textContent=n>0?n+' recipient'+(n>1?'s':'')+' selected':'No recipients selected';
+}
+
+function updateCharCount(){
+  document.getElementById('char-count').textContent=document.getElementById('blast-msg').value.length;
+}
+
+function getSelectedRecipients(){
+  const ids=Array.from(document.querySelectorAll('.recip-check:checked')).map(c=>parseInt(c.dataset.id));
+  return contacts.filter(c=>ids.includes(c.id));
+}
+
+function previewBlast(){
+  const msg=document.getElementById('blast-msg').value;
+  const recipients=getSelectedRecipients();
+  if(!msg){ showToast('Please write a message first'); return; }
+  if(recipients.length===0){ showToast('Please select at least one recipient'); return; }
+  const contact=recipients[0];
+  const preview=msg.replace(/{name}/g,contact.name);
+  document.getElementById('preview-label').textContent='Preview for: '+contact.name;
+  document.getElementById('preview-msg').textContent=preview;
+  document.getElementById('preview-modal').classList.add('open');
+}
+
+async function sendBlast(){
+  const msg=document.getElementById('blast-msg').value.trim();
+  const recipients=getSelectedRecipients();
+  const date=document.getElementById('sched-date').value;
+  const time=document.getElementById('sched-time').value;
+  if(!msg){ showToast('Please write a message first'); return; }
+  if(recipients.length===0){ showToast('Please select at least one recipient'); return; }
+
+  const scheduled=date&&time?date+' '+time:null;
+  const token=settings.token;
+
+  if(!token){
+    // Demo mode — no actual sending
+    const entry={
+      id:Date.now(), msg, recipients,
+      sentAt:scheduled||new Date().toLocaleString('id-ID'),
+      scheduled:!!scheduled, status:'demo'
+    };
+    history.unshift(entry);
+    sentToday+=recipients.length;
+    saveStorage();
+    renderHistory();
+    updateStats();
+    showToast((scheduled?'Scheduled':'Logged (demo mode)') +' — '+recipients.length+' recipient'+(recipients.length>1?'s':''));
+    switchTab('history');
+    return;
+  }
+
+  // Real Fonnte sending
+  showToast('Sending... please wait');
+  let successCount=0;
+  const delay=parseInt(settings.delay)||3;
+
+  for(let i=0;i<recipients.length;i++){
+    const c=recipients[i];
+    const personalizedMsg=msg.replace(/{name}/g,c.name);
+    try {
+      const res=await fetch('https://api.fonnte.com/send',{
+        method:'POST',
+        headers:{ 'Authorization': token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ target: c.phone, message: personalizedMsg })
+      });
+      const data=await res.json();
+      if(data.status) successCount++;
+    } catch(e){}
+    if(i<recipients.length-1) await new Promise(r=>setTimeout(r,delay*1000));
+  }
+
+  const entry={
+    id:Date.now(), msg, recipients,
+    sentAt:new Date().toLocaleString('id-ID'),
+    scheduled:false, status:'sent', successCount
+  };
+  history.unshift(entry);
+  sentToday+=successCount;
+  saveStorage();
+  renderHistory();
+  updateStats();
+  showToast('Done! Sent to '+successCount+'/'+recipients.length+' contacts');
+  switchTab('history');
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(history.length===0){ el.innerHTML=`<div class="empty-state">No messages sent yet.</div>`; return; }
+  el.innerHTML=history.map(h=>`
+    <div class="history-item">
+      <div class="history-meta">
+        <span style="font-size:12px;color:#888">${h.sentAt}</span>
+        <div style="display:flex;gap:6px">
+          <span class="badge ${h.status==='sent'?'badge-green':'badge-gray'}">${h.status==='demo'?'Demo':h.status==='sent'?'Sent':'Scheduled'}</span>
+          <span class="badge badge-blue">${h.recipients.length} recipients</span>
+        </div>
+      </div>
+      <div class="history-msg">${h.msg}</div>
+      <div class="history-recipients">${h.recipients.map(r=>r.name).join(', ')}</div>
+    </div>
+  `).join('');
+}
+
+function clearHistory(){
+  if(!confirm('Clear all history?')) return;
+  history=[];
+  sentToday=0;
+  saveStorage();
+  renderHistory();
+  updateStats();
+}
+
+function saveSettings(){
+  settings.token=document.getElementById('fonnte-token').value.trim();
+  settings.delay=parseInt(document.getElementById('msg-delay').value)||3;
+  saveStorage();
+  updateFonnteBanner();
+  showToast('Settings saved');
+}
+
+function updateFonnteBanner(){
+  const badge=document.getElementById('fonnte-status-badge');
+  if(settings.token){
+    badge.textContent='Connected';
+    badge.className='fonnte-status connected';
+  } else {
+    badge.textContent='Not configured';
+    badge.className='fonnte-status disconnected';
+  }
+}
+
+function exportCSV(){
+  const rows=[['name','phone','group','status'],...contacts.map(c=>[c.name,c.phone,c.group||'',c.active?'active':'inactive'])];
+  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='contacts.csv';
+  a.click();
+}
+
+function importCSV(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    let added=0;
+    lines.slice(1).forEach(line=>{
+      const parts=line.split(',').map(p=>p.replace(/^"|"$/g,'').trim());
+      if(parts[0]&&parts[1]){
+        contacts.push({id:Date.now()+added,name:parts[0],phone:parts[1],group:parts[2]||'',active:(parts[3]||'active')==='active'});
+        added++;
+      }
+    });
+    saveStorage();
+    filterContacts();
+    showToast('Imported '+added+' contacts');
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active',['contacts','blast','history','settings'][i]===name); });
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Init
+loadStorage();
+renderContacts(contacts);
+renderHistory();
+updateFonnteBanner();
+if(settings.token) document.getElementById('fonnte-token').value=settings.token;
+if(settings.delay) document.getElementById('msg-delay').value=settings.delay;
+</script>
+</body>
+</html>
